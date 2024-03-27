@@ -1,5 +1,5 @@
 # Group#:           33
-# Student Names:
+# Student Names:    Rachael Peng, Michael Koon
 
 """
     This program implements a variety of the snake 
@@ -109,7 +109,7 @@ class Game():
         #starting length and location of the snake
         #note that it is a list of tuples, each being an
         # (x, y) tuple. Initially its size is 5 tuples.       
-        self.snakeCoordinates = [(495, 55), (485, 55), (475, 55),
+        self.snakeCoordinates = [(495, 55), (485, 55), (475, 55), # first tuple represents snake "head"
                                  (465, 55), (455, 55)]
         #initial direction of the snake
         self.direction = "Left"
@@ -126,8 +126,9 @@ class Game():
         """
         SPEED = 0.15     #speed of snake updates (sec)
         while self.gameNotOver:
-            #complete the method implementation below
-            pass #remove this line from your implementation
+            # generate a move task and put in queue 
+            self.queue.put({"move": self.snakeCoordinates})
+            #remove this line from your implementation
 
     def whenAnArrowKeyIsPressed(self, e) -> None:
         """ 
@@ -160,6 +161,29 @@ class Game():
             and position) should be correctly updated.
         """
         NewSnakeCoordinates = self.calculateNewCoordinates()
+
+        tupleNumber: int = -1 # track x or y coordinate of snake tuple 
+        preyCoordinatesMatch: int = 0
+
+        # first check if the snake head has "eaten" or touched the prey icon
+        for snakeHeadTuple in NewSnakeCoordinates[0]: # only need to evaluate first tuple or snake "head"
+            tupleNumber += 1
+            distPreySnake = snakeHeadTuple[tupleNumber] - self.preyCoordinates[tupleNumber] # distance between one side of prey icon and snake head 
+            # whenever snake head begins to touch prey icon/is touching prey icon, coordinate counts as prey "eaten"
+            if distPreySnake <= PREY_ICON_WIDTH and distPreySnake >= 0: 
+                preyCoordinatesMatch += 1
+        
+        # if both coordinates match, then prey is eaten
+        if preyCoordinatesMatch == 2:
+            self.score += 1 # 1 prey eaten means1 point increase in score 
+            self.queue.put_nowait({"score": self.score}) # add to queue to display the new score 
+            self.createNewPrey() # generate a new prey
+
+            # increase the length of the snake
+            self.snakeCoordinates.append((self.snakeCoordinates[-1][0], self.snakeCoordinates[-1][1])) # *****FIX LATER
+
+        # check if game is over, passing coordinates of snake "head"
+        self.isGameOver(NewSnakeCoordinates[0])
         #complete the method implementation below
 
 
@@ -173,6 +197,11 @@ class Game():
             It is used by the move() method.    
         """
         lastX, lastY = self.snakeCoordinates[-1]
+
+        if self.direction == "Left":
+            self.snakeCoordinates.append() # FIX LATER
+
+
         #complete the method implementation below
 
 
@@ -185,6 +214,9 @@ class Game():
             field and also adds a "game_over" task to the queue. 
         """
         x, y = snakeCoordinates
+
+
+        gui.gameOver()
         #complete the method implementation below
 
     def createNewPrey(self) -> None:
@@ -199,7 +231,14 @@ class Game():
             away from the walls. 
         """
         THRESHOLD = 15   #sets how close prey can be to borders
-        #complete the method implementation below
+        # generate x, y integer coordinates of prey randomly and make sure they account for border threshold
+        xyCoordinates: tuple = (random.randint(THRESHOLD, WINDOW_WIDTH - THRESHOLD), 
+                                      random.randint(THRESHOLD, WINDOW_HEIGHT - THRESHOLD))
+        # generate rectangular prey coordinates using the formula specified in documentation 
+        self.preyCoordinates: tuple = (xyCoordinates[0] - PREY_ICON_WIDTH / 2, xyCoordinates[1] - PREY_ICON_WIDTH / 2,
+                                   xyCoordinates[1] + PREY_ICON_WIDTH / 2, xyCoordinates[1] + PREY_ICON_WIDTH / 2)
+        # put coordinates of new prey in queue
+        self.queue.put_nowait({"prey": self.preyCoordinates})
 
 
 if __name__ == "__main__":
@@ -207,7 +246,7 @@ if __name__ == "__main__":
     WINDOW_WIDTH = 500           
     WINDOW_HEIGHT = 300 
     SNAKE_ICON_WIDTH = 15
-    #add the specified constant PREY_ICON_WIDTH here     
+    PREY_ICON_WIDTH = 10   
 
     BACKGROUND_COLOUR = "green"   #you may change this colour if you wish
     ICON_COLOUR = "yellow"        #you may change this colour if you wish
