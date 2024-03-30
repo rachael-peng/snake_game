@@ -6,7 +6,7 @@ import queue
 import time, random
 
 
-def consumerWorker(queue: queue.Queue):
+def consumerWorker(queue: queue.Queue) -> None:
     """
     The target function for a consumer thread.
 
@@ -27,7 +27,7 @@ def consumerWorker(queue: queue.Queue):
         time.sleep(random.random())  # Introduce some randomness
 
 
-def producerWorker(queue: queue.Queue):
+def producerWorker(queue: queue.Queue) -> None:
     """
     The target function for a producer thread.
 
