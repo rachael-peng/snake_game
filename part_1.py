@@ -108,9 +108,10 @@ class Game():
         self.score = 0
         #starting length and location of the snake
         #note that it is a list of tuples, each being an
-        # (x, y) tuple. Initially its size is 5 tuples.       
-        self.snakeCoordinates = [(495, 55), (495-PREY_ICON_WIDTH, 55), (495-2*PREY_ICON_WIDTH, 55), # last tuple represents snake "head"
-                                 (495-3*PREY_ICON_WIDTH, 55), (495-4*PREY_ICON_WIDTH, 55)]  # (495, 55), (485, 55), (475, 55), (465, 55), (455, 55)
+        # (x, y) tuple. Initially its size is 5 tuples.
+        # Last tuple represents snake head    
+        self.snakeCoordinates = [(495, 55), (495-PREY_ICON_WIDTH, 55), (495-2*PREY_ICON_WIDTH, 55), 
+                                 (495-3*PREY_ICON_WIDTH, 55), (495-4*PREY_ICON_WIDTH, 55)] 
         #initial direction of the snake
         self.direction = "Left"
         self.gameNotOver = True
@@ -127,12 +128,12 @@ class Game():
         SPEED = 0.15     #speed of snake updates (sec)
         while self.gameNotOver:
             # generate a move task and put in queue
-            self.queue.put({"move": self.snakeCoordinates})
-            # set how often move tasks generated (speed of snake movement)
-            time.sleep(SPEED)
+            self.queue.put({"move": self.snakeCoordinates}) # block until complete as essential to game continuation
             # move snake
             self.move()
-
+            # set how often move tasks generated (speed of snake movement)
+            time.sleep(SPEED)
+            
     def whenAnArrowKeyIsPressed(self, e: Event) -> None:
         """ 
             This method is bound to the arrow keys
@@ -163,14 +164,14 @@ class Game():
             The snake coordinates list (representing its length 
             and position) should be correctly updated.
         """
-        newSnakeCoordinates = self.calculateNewCoordinates()
+        newSnakeCoordinates = self.calculateNewCoordinates() 
 
-        # update snake coordinates list with new coordinates by:
+        # update sefl.SnakeCoordinates list with new coordinates by:
         # adding new coordinate at head, removing coordinate at tail - equivalent to shifting snake in specified direction
         self.snakeCoordinates.append(newSnakeCoordinates) # add new snake head coordinate
         self.snakeCoordinates.pop(0) # remove tail
 
-        preyEaten: bool = False
+        preyEaten: bool = False # track if prey is eaten
 
         # first check if the snake head has "eaten" or touched the prey icon
         xDistPreySnake: int = newSnakeCoordinates[0] - self.preyCoordinates[0] # x distance between left side of prey icon and snake head 
@@ -179,41 +180,42 @@ class Game():
         if self.direction == "Up" or self.direction == "Down": # if snake moving vertically
             # whenever snake head begins to touch prey icon/is touching prey icon on vertical axis, counts as prey touching vertically
             if yDistPreySnake <= PREY_ICON_WIDTH and yDistPreySnake >= 0:  
-                # on horizontal axis, allow extra tolerance distance of SNAKE_ICON_WIDTH-PREY_ICON_WIDTH to count as prey touching
+                # on horizontal axis, allow extra tolerance distance and still count as prey touching
                 if xDistPreySnake <= PREY_ICON_WIDTH+abs(SNAKE_ICON_WIDTH-PREY_ICON_WIDTH) and xDistPreySnake >= -abs(SNAKE_ICON_WIDTH-PREY_ICON_WIDTH):
                     preyEaten = True  
         else: # if snake is moving horizontally
             # whenever snake head begins to touch prey icon/is touching prey icon on horizontal axis, counts as prey touching horizontally
             if xDistPreySnake <= PREY_ICON_WIDTH and xDistPreySnake >= 0: 
-                # on vertical axis, allow extra tolerance distance of SNAKE_ICON_WIDTH-PREY_ICON_WIDTH to count as prey touching
+                # on vertical axis, allow extra tolerance distance and still  count as prey touching
                 if yDistPreySnake <= PREY_ICON_WIDTH+abs(SNAKE_ICON_WIDTH-PREY_ICON_WIDTH) and yDistPreySnake >= -abs(SNAKE_ICON_WIDTH-PREY_ICON_WIDTH):
                     preyEaten = True  
             
         # if prey is eaten, increase score and length of snake
         if preyEaten:
             self.score += 1 # 1 prey eaten means1 point increase in score 
-            self.queue.put_nowait({"score": self.score}) # add to queue to display the new score 
+            self.queue.put_nowait({"score": self.score}) # add to queue to display the new score, don't block as score update not essential to game continuation 
 
             # increase the length of the snake
             addLength: tuple = () # coordinate added to increase length of snake 
 
             # determine the position of this new coordinate to add
-            if self.snakeCoordinates[0][0] == self.snakeCoordinates[1][0]: # check if last 2 coordinates on the same line vertically
-                if self.snakeCoordinates[0][1] > self.snakeCoordinates[1][1]: # check if snake tail points down or up,
-                                                                              # adding new length at open end
-                    # if open tail end points up (if snake tail y coordinate greater than 2nd y coordinate next to snake tail)
+            if self.snakeCoordinates[0][0] == self.snakeCoordinates[1][0]: # check if first 2 snake coordinates are on the same line vertically
+                                                                            # first coordinate = snake tail 
+                # if so, check if snake tail points down or up, adding new length at pointing open end
+                if self.snakeCoordinates[0][1] > self.snakeCoordinates[1][1]: 
+                    # if open tail end points up (snake tail y coordinate greater than y coordinate of tuple next to snake tail)
                     addLength = (self.snakeCoordinates[0][0], self.snakeCoordinates[0][1] + PREY_ICON_WIDTH)
-                else: # otherwise open tail end points down, add length below
+                else: # otherwise tail end points down, add length below
                     addLength = (self.snakeCoordinates[0][0], self.snakeCoordinates[0][1] - PREY_ICON_WIDTH)
-            else: # otherwise last 2 coordinates are on the same line horizontally
-                if self.snakeCoordinates[0][0] > self.snakeCoordinates[1][0]: # check if snake tail open end poinst left or right
-                                                                              # adding new length at open end
-                    # if open tail end points right (if snake tail x coordinate greater than 2nd x coordinate next to snake tail)
+            else: # otherwise first 2 snake coordinates are on the same line horizontally
+                 # check if snake tail points right or left, adding new length at pointing open end
+                if self.snakeCoordinates[0][0] > self.snakeCoordinates[1][0]:
+                    # if open tail end points right (snake tail x-coordinate greater than x-coordinate of tuple next to snake tail)
                     addLength = (self.snakeCoordinates[0][0] + PREY_ICON_WIDTH, self.snakeCoordinates[0][1])
-                else: # otherwise open tail end points left, add length left 
+                else: # otherwise tail end points left, add length left 
                     addLength = (self.snakeCoordinates[0][0] - PREY_ICON_WIDTH, self.snakeCoordinates[0][1])
 
-            self.snakeCoordinates.insert(0, addLength)
+            self.snakeCoordinates.insert(0, addLength) # add the new length the snake gained from eating prey to tail-end
             self.createNewPrey() # generate a new prey
 
         # check if game is over, passing coordinates of snake head
@@ -242,7 +244,6 @@ class Game():
             newY += PREY_ICON_WIDTH # move down 
 
         return (newX, newY)
-        #complete the method implementation below
 
     def isGameOver(self, snakeCoordinates: tuple[int, int]) -> None:
         """
@@ -255,18 +256,18 @@ class Game():
         x, y = snakeCoordinates # coordinates of snake head
 
         # check if snake hit any of left or right walls or top or bottom walls 
-        # use >= <= to account for latency, so as long as the snake head touches any point of prey icon it is eaten
+        # use >= <= to account for latency, so as long as the snake head touches any point outside game window = game over
         if x >= WINDOW_WIDTH or x <= 0 or y >= WINDOW_HEIGHT or y <= 0:
             self.gameNotOver = False
         # if the snake head coordinate is equal to any other snake coordinate, then snake bit itself 
         else:
-            # check if snake head matches any tuples in snakeCoordiantes
-            for coordinate in self.snakeCoordinates[:-1]: # don't check that head is equal to itself
+            # check if snake head matches any tuples in snakeCoordinates
+            for coordinate in self.snakeCoordinates[:-1]: # but don't check that head is equal to itself
                 if (x, y) == coordinate:
                     self.gameNotOver = False
         
         if not self.gameNotOver:
-            self.queue.put({"game_over": self.gameNotOver}) # block until complete
+            self.queue.put({"game_over": self.gameNotOver}) # block until complete, as game no longer needs to continue functioning
 
     def createNewPrey(self) -> None:
         """ 
@@ -281,28 +282,29 @@ class Game():
         """
         THRESHOLD = 15   #sets how close prey can be to borders
 
-        # Create list of tuples of prey x and y coordinates
+        # Create list of tuples for possible prey x and y coordinates
+        possiblePreyCoordinates: list = [()]
+
         # Accounting for border threshold and score text
         scoreWidth: int = 55  # approximated + buffer
         scoreHeight: int = 15 # approximated + buffer
-
         # We should avoid generating prey on score text (0, 0) to (60 + scoreWidth, 15 + scoreHeight) (as config)
         scoreBottomRightCoordinate: tuple = (60 + scoreWidth, 15 + scoreHeight)
-        possibleCoordinates: list = [()]
-        for xCoordinate in range(THRESHOLD, WINDOW_WIDTH-THRESHOLD):
-            for yCoordinate in range(THRESHOLD, WINDOW_HEIGHT-THRESHOLD):
-                if (xCoordinate, yCoordinate) > scoreBottomRightCoordinate:
-                    possibleCoordinates.append((xCoordinate, yCoordinate))
 
-        for coordinateTuple in self.snakeCoordinates:
-            if coordinateTuple in possibleCoordinates:
-                possibleCoordinates.remove(coordinateTuple)
+        for xCoordinate in range(THRESHOLD, WINDOW_WIDTH-THRESHOLD): # account for threshold in x and y
+            for yCoordinate in range(THRESHOLD, WINDOW_HEIGHT-THRESHOLD):
+                if (xCoordinate, yCoordinate) > scoreBottomRightCoordinate: # avoid generating on score
+                    # prey should also not be generated on the current coordinates of snake itself
+                    for snakeCoordinate in self.snakeCoordinates:
+                        if (xCoordinate, yCoordinate) != snakeCoordinate:
+                            possiblePreyCoordinates.append((xCoordinate, yCoordinate))
 
         # generate x, y integer coordinates of prey randomly and make sure they account for border threshold
-        xyCoordinates: list = (random.sample(possibleCoordinates, 1))
+        xyCoordinates: list = (random.sample(possiblePreyCoordinates, 1))
         # generate rectangular prey coordinates using the formula specified in documentation 
         self.preyCoordinates: tuple = (xyCoordinates[0][0] - PREY_ICON_WIDTH / 2, xyCoordinates[0][1] - PREY_ICON_WIDTH / 2,
                                 xyCoordinates[0][0] + PREY_ICON_WIDTH / 2, xyCoordinates[0][1] + PREY_ICON_WIDTH / 2)
+        
         # put coordinates of new prey in queue
         self.queue.put_nowait({"prey": self.preyCoordinates})
 
@@ -312,7 +314,7 @@ if __name__ == "__main__":
     WINDOW_WIDTH = 500           
     WINDOW_HEIGHT = 300 
     SNAKE_ICON_WIDTH = 15
-    PREY_ICON_WIDTH = 10   
+    PREY_ICON_WIDTH = 10  
 
     BACKGROUND_COLOUR = "green"   #you may change this colour if you wish
     ICON_COLOUR = "yellow"        #you may change this colour if you wish
