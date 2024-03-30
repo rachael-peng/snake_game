@@ -283,8 +283,8 @@ class Game():
 
         # Create list of tuples of prey x and y coordinates
         # Accounting for border threshold and score text
-        scoreWidth: int = 45  # approximated
-        scoreHeight: int = 15 # approximated
+        scoreWidth: int = 55  # approximated + buffer
+        scoreHeight: int = 15 # approximated + buffer
 
         # We should avoid generating prey on score text (0, 0) to (60 + scoreWidth, 15 + scoreHeight) (as config)
         scoreBottomRightCoordinate: tuple = (60 + scoreWidth, 15 + scoreHeight)
