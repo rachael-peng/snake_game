@@ -180,13 +180,13 @@ class Game():
             # whenever snake head begins to touch prey icon/is touching prey icon on vertical axis, counts as prey touching vertically
             if yDistPreySnake <= PREY_ICON_WIDTH and yDistPreySnake >= 0:  
                 # on horizontal axis, allow extra tolerance distance of SNAKE_ICON_WIDTH-PREY_ICON_WIDTH to count as prey touching
-                if xDistPreySnake <= SNAKE_ICON_WIDTH and xDistPreySnake >= -(SNAKE_ICON_WIDTH-PREY_ICON_WIDTH):
+                if xDistPreySnake <= PREY_ICON_WIDTH+abs(SNAKE_ICON_WIDTH-PREY_ICON_WIDTH) and xDistPreySnake >= -abs(SNAKE_ICON_WIDTH-PREY_ICON_WIDTH):
                     preyEaten = True  
         else: # if snake is moving horizontally
             # whenever snake head begins to touch prey icon/is touching prey icon on horizontal axis, counts as prey touching horizontally
             if xDistPreySnake <= PREY_ICON_WIDTH and xDistPreySnake >= 0: 
                 # on vertical axis, allow extra tolerance distance of SNAKE_ICON_WIDTH-PREY_ICON_WIDTH to count as prey touching
-                if yDistPreySnake <= SNAKE_ICON_WIDTH and yDistPreySnake >= -(SNAKE_ICON_WIDTH-PREY_ICON_WIDTH):
+                if yDistPreySnake <= PREY_ICON_WIDTH+abs(SNAKE_ICON_WIDTH-PREY_ICON_WIDTH) and yDistPreySnake >= -abs(SNAKE_ICON_WIDTH-PREY_ICON_WIDTH):
                     preyEaten = True  
             
         # if prey is eaten, increase score and length of snake
@@ -316,7 +316,7 @@ if __name__ == "__main__":
     #some constants for our GUI
     WINDOW_WIDTH = 500           
     WINDOW_HEIGHT = 300 
-    SNAKE_ICON_WIDTH = 15
+    SNAKE_ICON_WIDTH = 5
     PREY_ICON_WIDTH = 10   
 
     BACKGROUND_COLOUR = "green"   #you may change this colour if you wish
