@@ -99,7 +99,7 @@ class Game():
     '''
         This class implements most of the game functionalities.
     '''
-    def __init__(self):
+    def __init__(self) -> None:
         """
            This initializer sets the initial snake coordinate list, movement
            direction, and arranges for the first prey to be created.
@@ -170,27 +170,27 @@ class Game():
         self.snakeCoordinates.append(NewSnakeCoordinates) # add new snake head coordinate
         self.snakeCoordinates.pop(0) # remove tail
 
-        preyCoordinatesMatch: int = 0
+        preyEaten: bool = False
 
         # first check if the snake head has "eaten" or touched the prey icon
-        xDistPreySnake: int = NewSnakeCoordinates[0] - self.preyCoordinates[0] # x distance between one side of prey icon and snake head 
-        yDistPreySnake: int = NewSnakeCoordinates[1] - self.preyCoordinates[1] # y distance between one side of prey icon and snake head 
-        
-        if self.direction == "Up" or self.direction == "Down":
-            if yDistPreySnake <= PREY_ICON_WIDTH and xDistPreySnake >= 0: 
-                preyCoordinatesMatch += 1  
-            if xDistPreySnake <= 1.5 * PREY_ICON_WIDTH and xDistPreySnake >= 0:
-                preyCoordinatesMatch += 1  
-        else:
-            if yDistPreySnake <= PREY_ICON_WIDTH and xDistPreySnake >= 0: 
-                preyCoordinatesMatch += 1 
+        xDistPreySnake: int = NewSnakeCoordinates[0] - self.preyCoordinates[0] # x distance between left side of prey icon and snake head 
+        yDistPreySnake: int = NewSnakeCoordinates[1] - self.preyCoordinates[1] # y distance between top side of prey icon and snake head 
+
+        if self.direction == "Up" or self.direction == "Down": # if snake moving vertically
+            # whenever snake head begins to touch prey icon/is touching prey icon on vertical axis, counts as prey touching vertically
+            if yDistPreySnake <= PREY_ICON_WIDTH and yDistPreySnake >= 0:  
+                # on horizontal axis, allow extra tolerance distance of SNAKE_ICON_WIDTH-PREY_ICON_WIDTH to count as prey touching
+                if xDistPreySnake <= SNAKE_ICON_WIDTH and xDistPreySnake >= -(SNAKE_ICON_WIDTH-PREY_ICON_WIDTH):
+                    preyEaten = True  
+        else: # if snake is moving horizontally
+            # whenever snake head begins to touch prey icon/is touching prey icon on horizontal axis, counts as prey touching horizontally
             if xDistPreySnake <= PREY_ICON_WIDTH and xDistPreySnake >= 0: 
-                preyCoordinatesMatch += 1  
+                # on vertical axis, allow extra tolerance distance of SNAKE_ICON_WIDTH-PREY_ICON_WIDTH to count as prey touching
+                if yDistPreySnake <= SNAKE_ICON_WIDTH and yDistPreySnake >= -(SNAKE_ICON_WIDTH-PREY_ICON_WIDTH):
+                    preyEaten = True  
             
-            # whenever snake head begins to touch prey icon/is touching prey icon, coordinate counts as prey "eaten"
-               
-        # if both coordinates match, then prey is eaten
-        if preyCoordinatesMatch == 2:
+        # if prey is eaten, increase score and length of snake
+        if preyEaten == True:
             self.score += 1 # 1 prey eaten means1 point increase in score 
             self.queue.put_nowait({"score": self.score}) # add to queue to display the new score 
 
@@ -245,7 +245,7 @@ class Game():
         return (newX, newY)
         #complete the method implementation below
 
-    def isGameOver(self, snakeCoordinates) -> None:
+    def isGameOver(self, snakeCoordinates: tuple) -> None:
         """
             This method checks if the game is over by 
             checking if now the snake has passed any wall
@@ -280,12 +280,34 @@ class Game():
             away from the walls. 
         """
         THRESHOLD = 15   #sets how close prey can be to borders
+
+        # Create list of tuples of prey x and y coordinates, accoutning for threshold
+        possibleCoordinates: list = [()]
+        for xCoordinate in range(THRESHOLD, WINDOW_WIDTH-THRESHOLD):
+            for yCoordinate in range(THRESHOLD, WINDOW_HEIGHT-THRESHOLD):
+                possibleCoordinates.append((xCoordinate, yCoordinate))
+            
+        # create list of score coordinates
+        scoreWidth: int = 10 # approximated, how to get???
+        scoreHeight: int = 0 #??? figur eout
+        scoreCoordinates: list = [()]
+        for scoreXCoordinate in range(60, 61+scoreWidth):
+            for scoreYCoordinate in range(15, 16+scoreHeight):
+                scoreCoordinates.append((scoreXCoordinate, scoreYCoordinate))
+
+        # prey must not appear on score text or current position of snake
+        for coordinateTuple in scoreCoordinates:
+            if coordinateTuple in possibleCoordinates:
+                possibleCoordinates.remove(coordinateTuple)
+        for coordinateTuple in self.snakeCoordinates:
+            if coordinateTuple in possibleCoordinates:
+                possibleCoordinates.remove(coordinateTuple)
+
         # generate x, y integer coordinates of prey randomly and make sure they account for border threshold
-        xyCoordinates: tuple = (random.randint(THRESHOLD, WINDOW_WIDTH - THRESHOLD), 
-                                      random.randint(THRESHOLD, WINDOW_HEIGHT - THRESHOLD))
+        xyCoordinates: list = (random.sample(possibleCoordinates, 1))
         # generate rectangular prey coordinates using the formula specified in documentation 
-        self.preyCoordinates: tuple = (xyCoordinates[0] - PREY_ICON_WIDTH / 2, xyCoordinates[1] - PREY_ICON_WIDTH / 2,
-                                   xyCoordinates[0] + PREY_ICON_WIDTH / 2, xyCoordinates[1] + PREY_ICON_WIDTH / 2)
+        self.preyCoordinates: tuple = (xyCoordinates[0][0] - PREY_ICON_WIDTH / 2, xyCoordinates[0][1] - PREY_ICON_WIDTH / 2,
+                                xyCoordinates[0][0] + PREY_ICON_WIDTH / 2, xyCoordinates[0][1] + PREY_ICON_WIDTH / 2)
         # put coordinates of new prey in queue
         self.queue.put_nowait({"prey": self.preyCoordinates})
 
