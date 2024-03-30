@@ -109,8 +109,8 @@ class Game():
         #starting length and location of the snake
         #note that it is a list of tuples, each being an
         # (x, y) tuple. Initially its size is 5 tuples.       
-        self.snakeCoordinates = [(495, 55), (485, 55), (475, 55), # first tuple represents snake "head"
-                                 (465, 55), (455, 55)]  # (495, 55), (485, 55), (475, 55), (465, 55), (455, 55)
+        self.snakeCoordinates = [(495, 55), (495-PREY_ICON_WIDTH, 55), (495-2*PREY_ICON_WIDTH, 55), # first tuple represents snake "head"
+                                 (495-3*PREY_ICON_WIDTH, 55), (495-4*PREY_ICON_WIDTH, 55)]  # (495, 55), (485, 55), (475, 55), (465, 55), (455, 55)
         #initial direction of the snake
         self.direction = "Left"
         self.gameNotOver = True
@@ -127,9 +127,11 @@ class Game():
         SPEED = 0.15     #speed of snake updates (sec)
         while self.gameNotOver:
             # generate a move task and put in queue
-            self.move()
             self.queue.put({"move": self.snakeCoordinates})
-            #remove this line from your implementation
+            # set how often move tasks generated (speed of snake movement)
+            time.sleep(SPEED)
+            # move snake
+            self.move()
 
     def whenAnArrowKeyIsPressed(self, e) -> None:
         """ 
@@ -166,19 +168,27 @@ class Game():
         # update snake coordinates list with new coordinates by:
         # adding new coordinate at head, removing coordinate at tail - equivalent to shifting snake in specified direction
         self.snakeCoordinates.append(NewSnakeCoordinates) # add new snake head coordinate
-        self.snakeCoordinates.remove(0) # remove tail
+        self.snakeCoordinates.pop(0) # remove tail
 
-        tupleNumber: int = -1 # track x or y coordinate of snake tuple 
         preyCoordinatesMatch: int = 0
 
         # first check if the snake head has "eaten" or touched the prey icon
-        for snakeHeadTuple in NewSnakeCoordinates[-1]: # only need to evaluate snake "head"
-            tupleNumber += 1
-            distPreySnake = snakeHeadTuple[tupleNumber] - self.preyCoordinates[tupleNumber] # distance between one side of prey icon and snake head 
-            # whenever snake head begins to touch prey icon/is touching prey icon, coordinate counts as prey "eaten"
-            if distPreySnake <= PREY_ICON_WIDTH and distPreySnake >= 0: 
-                preyCoordinatesMatch += 1
+        xDistPreySnake: int = NewSnakeCoordinates[0] - self.preyCoordinates[0] # x distance between one side of prey icon and snake head 
+        yDistPreySnake: int = NewSnakeCoordinates[1] - self.preyCoordinates[1] # y distance between one side of prey icon and snake head 
         
+        if self.direction == "Up" or self.direction == "Down":
+            if yDistPreySnake <= PREY_ICON_WIDTH and xDistPreySnake >= 0: 
+                preyCoordinatesMatch += 1  
+            if xDistPreySnake <= 1.5 * PREY_ICON_WIDTH and xDistPreySnake >= 0:
+                preyCoordinatesMatch += 1  
+        else:
+            if yDistPreySnake <= PREY_ICON_WIDTH and xDistPreySnake >= 0: 
+                preyCoordinatesMatch += 1 
+            if xDistPreySnake <= PREY_ICON_WIDTH and xDistPreySnake >= 0: 
+                preyCoordinatesMatch += 1  
+            
+            # whenever snake head begins to touch prey icon/is touching prey icon, coordinate counts as prey "eaten"
+               
         # if both coordinates match, then prey is eaten
         if preyCoordinatesMatch == 2:
             self.score += 1 # 1 prey eaten means1 point increase in score 
@@ -187,7 +197,7 @@ class Game():
             # increase the length of the snake
             addLength: tuple = () # coordinate added to increase length of snake 
 
-            # determine the position of this new coordinate
+            # determine the position of this new coordinate to add
             if self.snakeCoordinates[0][0] == self.snakeCoordinates[1][0]: # check if last 2 coordinates on the same line vertically
                 if self.snakeCoordinates[0][1] > self.snakeCoordinates[1][1]: # check if snake tail points down or up,
                                                                               # adding new length at open end
@@ -206,8 +216,8 @@ class Game():
             self.snakeCoordinates.insert(0, addLength)
             self.createNewPrey() # generate a new prey
 
-        # check if game is over, passing coordinates of snake "head"
-        self.isGameOver(NewSnakeCoordinates[0])
+        # check if game is over, passing coordinates of snake head
+        self.isGameOver(NewSnakeCoordinates)
         #complete the method implementation below
 
     def calculateNewCoordinates(self) -> tuple:
@@ -220,18 +230,18 @@ class Game():
             It is used by the move() method.    
         """
         lastX, lastY = self.snakeCoordinates[-1] # represents snake head 
-        newX: int = 0
-        newY: int = 0
+        newX: int = lastX # represents new x coordinate to be added 
+        newY: int = lastY # represents new y coordinate to be added 
 
         if self.direction == "Right":
-            newX = lastX + 1 # move 1 unit to the right 
+            newX += PREY_ICON_WIDTH # move to the right 
         elif self.direction == "Left":
-            newX = lastX - 1 # move 1 unit to the left 
+            newX -= PREY_ICON_WIDTH # move to the left 
         elif self.direction == "Up":
-            newY = lastY + 1 # move 1 unit up
+            newY -= PREY_ICON_WIDTH # move up
         elif self.direction == "Down":
-            newY = lastY - 1 # move 1 unit down 
-        
+            newY += PREY_ICON_WIDTH # move down 
+
         return (newX, newY)
         #complete the method implementation below
 
@@ -243,22 +253,20 @@ class Game():
             If that is the case, it updates the gameNotOver 
             field and also adds a "game_over" task to the queue. 
         """
-        x, y = snakeCoordinates
+        x, y = snakeCoordinates # coordinates of snake head
 
         # check if snake hit any of left or right walls or top or bottom walls 
         # use >= <= to account for latency, so as long as the snake head touches any point of prey icon it is eaten
-        if self.snakeCoordinates[-1][0] >= WINDOW_WIDTH or self.snakeCoordinates[-1][0] <= 0 or \
-            self.snakeCoordinates[-1][1] >= WINDOW_HEIGHT or self.snakeCoordinates[-1][1] <= 0:
-            self.gameNotOver == False
-        # if the snake head (tuple representing head) coordinate is equal to any other snake coordinate, then snake bit itself 
+        if x >= WINDOW_WIDTH or x <= 0 or y >= WINDOW_HEIGHT or y <= 0:
+            self.gameNotOver = False
+        # if the snake head coordinate is equal to any other snake coordinate, then snake bit itself 
         else:
-            snakeHead: tuple = self.snakeCoordinates[-1] # tuple representing snake head
             for coordinate in self.snakeCoordinates: # check if snake head matches any tuples in snakeCoordiantes
-                if snakeHead == coordinate and coordinate != self.snakeCoordinates[-1]:  # don't check that head is equal to itself
-                    self.gameNotOver == False
+                if (x, y) == coordinate and coordinate != self.snakeCoordinates[-1]:  # don't check that head is equal to itself
+                    self.gameNotOver = False
         
         if self.gameNotOver == False:
-            self.queue.append({"game_over": self.gameNotOver})
+            self.queue.put({"game_over": self.gameNotOver}) # block until complete
 
     def createNewPrey(self) -> None:
         """ 
