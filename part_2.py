@@ -5,7 +5,6 @@ import threading
 import queue
 import time, random
 
-
 def consumerWorker(queue: queue.Queue) -> None:
     """
     The target function for a consumer thread.
@@ -18,7 +17,7 @@ def consumerWorker(queue: queue.Queue) -> None:
     Args:
         queue (queue.Queue): The shared queue from which to consume items.
     """
-    # Just do while True as this is a daemon thread
+    # Just do while True as this is a daemon thread (infinite loop)
     while True:
         item = queue.get()  # Get the item from the queue
         print(f"{threading.current_thread().name} consumed item {item}")
@@ -61,7 +60,7 @@ if __name__ == "__main__":
     num_producers = 4
     num_consumers = 5
 
-    # Each producer will put 10 items in total, i.e. total 5 * 4 = 20 items
+    # Each producer will put 5 items in total, i.e. total 5 * 4 = 20 items
     items_per_producer = 5
 
     # Random number range
@@ -71,19 +70,15 @@ if __name__ == "__main__":
     # An array is created to store the producer workers as they are non-daemon and we would need to `.join()` for them
     producers: list[threading.Thread] = []
     for i in range(num_producers):
-        t = threading.Thread(
-            target=producerWorker, args=(buffer,), name=f"Producer-{i}"
-        )
+        t = threading.Thread(target=producerWorker, args=(buffer,), name=f"Producer-{i}")
         t.start()
         producers.append(t)
 
     # Create, name & start consumer threads
-    # Consumers are daemon threads as they will run indefinitely until the buffer is empty
+    # Consumers are daemon threads as they will run indefinitely until the buffer is empty 
     # Therefore, we don't need to `.join()` for them and thus no need to store them in an array
     for i in range(num_consumers):
-        threading.Thread(
-            target=consumerWorker, args=(buffer,), daemon=True, name=f"Consumer-{i}"
-        ).start()
+        threading.Thread(target=consumerWorker, args=(buffer,), daemon=True, name=f"Consumer-{i}").start()
 
     # Wait for all producer threads to finishs
     for p in producers:
