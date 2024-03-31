@@ -278,7 +278,8 @@ class Game():
             rectangle coordinates as its value. This is used by the 
             queue handler to represent the new prey.                    
             To make playing the game easier, set the x and y to be THRESHOLD
-            away from the walls. 
+            away from the walls.
+            In addiction, the prey should not be generated on the score text and on the snake.
         """
         THRESHOLD = 15   #sets how close prey can be to borders
 
