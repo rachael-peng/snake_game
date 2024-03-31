@@ -291,13 +291,28 @@ class Game():
         # We should avoid generating prey on score text (0, 0) to (60 + scoreWidth, 15 + scoreHeight) (as config)
         scoreBottomRightCoordinate: tuple = (60 + scoreWidth, 15 + scoreHeight)
 
+        # Account for the bounding box of snake coordinates
+        snakeXCoordinates: list = [x for x, y in self.snakeCoordinates]
+        snakeYCoordinates: list = [y for x, y in self.snakeCoordinates]
+
+        # The bounding box of the snake, offset by the width of the snake icon + buffer (We'll use PREY_ICON_WIDTH/2 as buffer here)
+        # This is to ensure that the prey does not spawn on the snake
+        BUFFER: int = PREY_ICON_WIDTH // 2
+        snakeMinX: int = min(snakeXCoordinates) - BUFFER
+        snakeMaxX: int = max(snakeXCoordinates) + BUFFER
+        snakeMinY: int = min(snakeYCoordinates) - SNAKE_ICON_WIDTH / 2 - BUFFER
+        snakeMaxY: int = max(snakeYCoordinates) + SNAKE_ICON_WIDTH / 2 + BUFFER
+
         for xCoordinate in range(THRESHOLD, WINDOW_WIDTH-THRESHOLD): # account for threshold in x and y
             for yCoordinate in range(THRESHOLD, WINDOW_HEIGHT-THRESHOLD):
-                if (xCoordinate, yCoordinate) > scoreBottomRightCoordinate: # avoid generating on score
-                    # prey should also not be generated on the current coordinates of snake itself
-                    for snakeCoordinate in self.snakeCoordinates:
-                        if (xCoordinate, yCoordinate) != snakeCoordinate:
-                            possiblePreyCoordinates.append((xCoordinate, yCoordinate))
+                # avoid generating on score
+                if (xCoordinate, yCoordinate) < scoreBottomRightCoordinate:
+                    continue
+                # prey should also not be generated on the current coordinates of snake itself (bounding box of snake)
+                if snakeMinX <= xCoordinate <= snakeMaxX and snakeMinY <= yCoordinate <= snakeMaxY:
+                    continue
+                # the remaining coordinates are possible prey coordinates
+                possiblePreyCoordinates.append((xCoordinate, yCoordinate))
 
         # generate x, y integer coordinates of prey randomly and make sure they account for border threshold
         xyCoordinates: list = (random.sample(possiblePreyCoordinates, 1))
