@@ -292,25 +292,23 @@ class Game():
         # We should avoid generating prey on score text (0, 0) to (60 + scoreWidth, 15 + scoreHeight) (as config)
         scoreBottomRightCoordinate: tuple = (60 + scoreWidth, 15 + scoreHeight)
 
-        # Account for the bounding box of snake coordinates
-        snakeXCoordinates: list = [x for x, y in self.snakeCoordinates]
-        snakeYCoordinates: list = [y for x, y in self.snakeCoordinates]
-
-        # The bounding box of the snake, offset by the width of the snake icon + buffer (We'll use PREY_ICON_WIDTH/2 as buffer here)
-        # This is to ensure that the prey does not spawn on the snake
-        BUFFER: int = PREY_ICON_WIDTH // 2
-        snakeMinX: int = min(snakeXCoordinates) - BUFFER
-        snakeMaxX: int = max(snakeXCoordinates) + BUFFER
-        snakeMinY: int = min(snakeYCoordinates) - SNAKE_ICON_WIDTH / 2 - BUFFER
-        snakeMaxY: int = max(snakeYCoordinates) + SNAKE_ICON_WIDTH / 2 + BUFFER
+        # Create set of snake coordinates with width of snake icon
+        # Account for the width of the snake icon and prey icon (such that no overlap should occur)
+        snakeCoordinatesWithWidth: set[tuple[int, int]] = set()
+        for x, y in self.snakeCoordinates:
+            snakeCoordinatesWithWidth.add((x, y))
+            buffer = (SNAKE_ICON_WIDTH - PREY_ICON_WIDTH) // 2
+            for i in range(-buffer, buffer + 1):
+                snakeCoordinatesWithWidth.add((x, y + i))
+                snakeCoordinatesWithWidth.add((x + i, y))
 
         for xCoordinate in range(THRESHOLD, WINDOW_WIDTH-THRESHOLD): # account for threshold in x and y
             for yCoordinate in range(THRESHOLD, WINDOW_HEIGHT-THRESHOLD):
                 # avoid generating on score
                 if (xCoordinate, yCoordinate) < scoreBottomRightCoordinate:
                     continue
-                # prey should also not be generated on the current coordinates of snake itself (bounding box of snake)
-                if snakeMinX <= xCoordinate <= snakeMaxX and snakeMinY <= yCoordinate <= snakeMaxY:
+                # prey should also not be generated on the current coordinates of snake itself
+                if (xCoordinate, yCoordinate) in snakeCoordinatesWithWidth:
                     continue
                 # the remaining coordinates are possible prey coordinates
                 possiblePreyCoordinates.append((xCoordinate, yCoordinate))
